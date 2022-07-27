@@ -48,7 +48,6 @@ public class AdminLoginInterceptor implements HandlerInterceptor {
         }
         // 4.将查询到的Hash数据转换为AdminDTO对象
         AdminDTO adminDTO = BeanUtil.fillBeanWithMap(adminMap, new AdminDTO(), false);
-        System.out.println("adminDTO = " + adminDTO);
         // 5.如果不为空，保存用户信息到ThreadLocal中
         AdminHolder.saveAdmin(adminDTO);
         // 6.刷新token的有效期

@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.annotation.Resource;
 
-@Configuration
+//@Configuration
 public class MvcConfig implements WebMvcConfigurer {
 
     @Resource
@@ -16,10 +16,6 @@ public class MvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new AdminLoginInterceptor(stringRedisTemplate))
-                .excludePathPatterns(
-                        "/admin/login/status",
-                        "/admin/logout"
-                );
+
     }
 }

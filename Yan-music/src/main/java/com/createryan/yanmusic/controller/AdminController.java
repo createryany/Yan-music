@@ -1,6 +1,7 @@
 package com.createryan.yanmusic.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSONObject;
@@ -34,26 +35,23 @@ public class AdminController {
      * @param map 登录参数，包括用户名和密码
      * @return
      */
-    @PostMapping("/login/status")
-    public Object adminLogin(@RequestParam Map<String, Object> map, HttpServletRequest request) {
-        // 获得用户的token，并传参给adminLogin方法
+    @PostMapping("/login")
+    public Object adminLogin(@NotNull @RequestParam Map<String, Object> map, HttpServletRequest request) {
+        // 1.获得用户的token，并传参给adminLogin方法
         String tokenStr = request.getHeader("authorization");
-        // 1.将map中转换成AdminDTO对象
+        // 2.将map中转换成AdminDTO对象
         AdminDTO adminDTO = BeanUtil.toBean(map, AdminDTO.class);
-        // 2.调用登录功能
+        // 3.调用登录功能
         return adminService.adminLogin(adminDTO, tokenStr);
     }
 
     /**
-     * 退出登录 TODO
+     * 退出登录
      * @return
      */
     @PostMapping("/logout")
     public Object adminLogout(HttpServletRequest request) {
         String token = request.getHeader("authorization");
-        if (token == null) {
-            return new ErrorMessage("服务器错误，请稍后重试！").getMessage();
-        }
         return adminService.adminLogout(token);
     }
 }

@@ -61,7 +61,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             String pdFromRedis = (String) adminMap.get("password");
             if (!username.equals(nameFromRedis)) {
                 // 2.5.用户名不同，则认定为第一次登录
-                tokenAndRedis(username, pd, adminDTO, true, tokenStr);
+                // 删除已有用户
+                stringRedisTemplate.delete(tokenKey);
+                tokenAndRedis(username, pd, adminDTO);
             } else if (!pd.equals(pdFromRedis)) {
                 // 2.5.密码错误登录失败
                 return new ErrorMessage("用户名或密码错误！").getMessage();
@@ -69,7 +71,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             return new SuccessMessage<>("登录成功", tokenStr).getMessage();
         }
         // 3.第一次登录
-        return tokenAndRedis(username, pd, adminDTO, false, NULL_VALUE);
+        return tokenAndRedis(username, pd, adminDTO);
     }
 
     /**
@@ -77,7 +79,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
      * 查找数据库，验证用户信息，验证成功后，
      * 返回给前端成功信息和token
      */
-    public Object tokenAndRedis(String username, String pd, AdminDTO adminDTO, Boolean hasToken, String tokenStr) {
+    public Object tokenAndRedis(String username, String pd, AdminDTO adminDTO) {
         // 3.没有token，第一次登录去数据库查询用户信息
         Admin admin = query().eq("name", username).one();
         // 3.判断用户是否存在
@@ -91,32 +93,10 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         }
         // 1.1.保存用户信息和token到redis中
         // 1.2.如果有就用传进来的tokenStr作为token
-        String token;
-        if (hasToken && tokenStr != null) {
-            // 1.3.先根据tokenKey删除原来的信息
-            String tokenKey = LOGIN_ADMIN_KEY + tokenStr;
-            stringRedisTemplate.delete(tokenKey);
-            // 1.4.调用tokenToRedis，保存新的用户信息和token到redis，返回token
-            token = tokenToRedis(admin, adminDTO, tokenStr);
-        } else {
-            // 1.3.如果没有token就生成随机token作为登录令牌
-            token = tokenToRedis(admin, adminDTO, NULL_VALUE);
-        }
-        // 5.返回token
-        return new SuccessMessage<>("登录成功", token).getMessage();
-    }
-
-    /*
-    * 保存用户信息和token到redis，返回token
-    * */
-    public String tokenToRedis(Admin admin, AdminDTO adminDTO, String token) {
-        if ("".equals(token)) {
-            // 1.判断传进来的token是否为空
-            token = UUID.randomUUID().toString(true);
-        }
+        String token = UUID.randomUUID().toString(true);
         // 2.将Admin对象转换为HashMap对象
         AdminDTO adminDTOHashMap = BeanUtil.copyProperties(admin, AdminDTO.class);
-        Map<String, Object> adminMap = BeanUtil.beanToMap(adminDTO, new HashMap<>(),
+        Map<String, Object> adminMap = BeanUtil.beanToMap(adminDTOHashMap, new HashMap<>(),
                 CopyOptions.create()
                         .setIgnoreNullValue(true)
                         .setFieldValueEditor((name, value) -> value.toString()));
@@ -126,7 +106,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         // 4.设置token有效期
         stringRedisTemplate.expire(tokenKey, LOGIN_ADMIN_TTL, TimeUnit.MINUTES);
         // 5.返回token
-        return token;
+        return new SuccessMessage<>("登录成功", token).getMessage();
     }
 
     /**
